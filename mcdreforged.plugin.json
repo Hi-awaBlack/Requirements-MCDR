@@ -1,0 +1,11 @@
+{
+    "id": "requirements",
+    "version": "1.0.0",
+    "name": "Requirements",
+    "description": "Auto install dependencies.",
+    "author": "Hi-awaBlack",
+    "link": "https://github.com/Hi-awaBlack/Requirements-MCDR",
+    "dependencies": {
+        "mcdreforged": ">=2.0.0-alpha.1"
+    }
+}
