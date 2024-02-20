@@ -1,63 +1,120 @@
 Requirements
 --------
+
+[`简体中文`](README-zh_CN.md) | **English**
+
 Make your MCDReforged plugin free of the need for users to manually install Python packages!
 
 ## Features
 
   - Automatically install missing packages
-  - Adjustable PyPI mirror source
-  - Can be built into your plugin
+  - Mutable PyPI sources
+  - Simple adaptation
 
 ## Adaptation
 
-Adaptation is very easy! Just make a slight change in your plugin's [on_load()](https://docs.mcdreforged.com/zh-cn/latest/plugin_dev/event.html#plugin-loaded) function.
+Adaptation is very easy! All it takes is a slight change to your plugin.
 
-See [Example](#Example) and [Calling Method](#Call Method).
+### Import
 
-## Example
+#### Dependency form
 
-For example, install the [Request](https://pypi.org/project/requests/) library:
+If the Requirements plugin exists in the form of a MCDReforged plugin, it can be imported using the following method:
 
-```
-def on_load(server: PluginServerInterface, prev_module):
-     server.get_plugin_instance('requirements').installModule(server, 'requests')
-     import request
-     ...
-```
+```python
+# Recommend
+import requirements
 
-Or batch installation:
-
-```
-def on_load(server: PluginServerInterface, prev_module):
-     server.get_plugin_instance('requirements').installModules(server, ['requests', 'pymysql', 'smtplib'])
-     import request
-     importpymysql
-     import smtplib
-     ...
+# Not recommended
+requirements = server.get_plugin_instance('requirements')
 ```
 
-Or even call requirements.txt directly:
+Please be careful to declare dependencies in your plugin's [metadata](https://docs.mcdreforged.com/zh-cn/latest/plugin_dev/metadata.html)!
 
-```
-def on_load(server: PluginServerInterface, prev_module):
-     server.get_plugin_instance('requirements').installModulesFromFile(server, 'https://raw.githubusercontent.com/MCDReforged/MCDR-bot/master/requirements.txt')
-     import cryptography
+#### Embedded form
+
+You can also extract the `/requirement/__init__.py` file in this plugin and insert it into your plug-in to import it in the normal way.
+
+### Use
+
+The installation of Python packages should be performed in the [`on_load`](https://docs.mcdreforged.com/zh-cn/latest/plugin_dev/event.html#plugin-loaded) event!
+
+The `install_module` function can install a software package alone and will return a Boolean value representing the installation result, like this:
+
+```python
+def on_load(server, prev):
+     success = requirements.install_module(server=server, module_name='requests', pypi_source=requirements.PYPI_OFFICIAL_SOURCE)
+     # >                                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     # >                                                                          This part is not required as the same default values exist as in this example. Here's a demonstration of how to customize a PyPI source.
+     if not success:
+         # Try changing the PyPI source and try again
+         # Or throw an exception to exit the program
+         ...
+
      import requests
-     importPyNBT
      ...
 ```
 
-You can also extract the __init__.py file and embed it in your plugin.
+The `install_modules` function can install many packages at once and will return a Boolean value representing the installation result, like this:
 
-## Call method
-
+```python
+def on_load(server, prev):
+     success = requirements.install_modules(server=server, modules_list=['requests', 'sqlalchemy'])
+     if not success:
+         ...
+    
+     import requests
+     import sqlalchemy
+     ...
 ```
-def installModule(server: PluginServerInterface, moduleName: str, mirrorSource: str = 'https://mirrors.cloud.tencent.com/pypi/simple/'):
+
+The `install_modules_from_file` function allows installing packages via `requirements.txt` and will return a Boolean value representing the installation result, like this:
+
+```python
+def on_load(server, prev):
+     success = requirements.install_modules_from_file(server=server, file_path='https://raw.githubusercontent.com/MCDReforged/MCDR-bot/master/requirements.txt')
+     # >                                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     # >                                                             Yes, it can be installed directly over the network. You can also use local files, but you need to make sure the path is correct, beware of relative paths!
+     if not success:
+         ...
+    
+     import requests
+     import sqlalchemy
+     ...
+```
+
+## Precautions
+
+  - The MCDReforged main thread will be blocked during the installation process
+
+## Reference source code
+
+```python
+from mcdreforged.api.types import PluginServerInterface
+
+PYPI_OFFICIAL_SOURCE = "https://pypi.org/simple/"
+
+
+def install_module(
+     server: PluginServerInterface,
+     module_name: str,
+     pypi_source: str = PYPI_OFFICIAL_SOURCE,
+) -> bool:
      ...
 
-def installModules(server: PluginServerInterface, modulesList: list, mirrorSource: str = 'https://mirrors.cloud.tencent.com/pypi/simple/'):
+
+def install_modules(
+     server: PluginServerInterface,
+     modules_list: list,
+     pypi_source: str = PYPI_OFFICIAL_SOURCE,
+) -> bool:
      ...
 
-def installModulesFromFile(server: PluginServerInterface, filePath: str, mirrorSource: str = 'https://mirrors.cloud.tencent.com/pypi/simple/'):
+
+def install_modules_from_file(
+     server: PluginServerInterface,
+     file_path: str,
+     pypi_source: str = PYPI_OFFICIAL_SOURCE,
+) -> bool:
      ...
 ```
